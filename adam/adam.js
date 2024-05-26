@@ -14,14 +14,15 @@ let sounds;
 const introDots = 32; // 2 measures of 4 beats x 4 "dots" per beat.
 const breathSectionDots = 416;
 const endSectionDots = 428;
+const randomDots = 428 + 64;
 
 const tempo140= 107.142857;
 const tempo220= 68.181818;
 const tempo200= 75;
 
 function theAdamShow() {
-  lines = parseAdamTiming();
   song = new Audio("Adam.mp3");
+  song.load();
   let tinyPop = new Audio("tiny-pop.mp3");
   let bup = new Audio("bup.mp3");
   let jpop = new Audio("JPop.mp3");
@@ -33,16 +34,24 @@ function theAdamShow() {
   for (let sound of sounds) {
     sound.load();
   }
-  let promise = song.play();
-  promise.then(startGame(lines));
+  startGame(lines);
 }
 
 function startGame() {
+  lines = parseAdamTiming();
+  $("#adam").html("");
   console.log("Playing song.");
   $("#button-holder").html("<button type='button' onclick='stopSong()'>Stop</button><br>");
+  song.play();
   timer = setInterval(adamsDot, tempo140);
   score = 0;
   speedBonus = 0;
+  currentLine = 0;
+  currentPiece = 0;
+  currentDots = 0;
+  totalDots = 0;
+  scoreMultiplier = 1;
+  gameOver = false;
   updateScore();
   return null;
 }
@@ -98,11 +107,12 @@ function adamsDot() {
     }
     if (piece.isAdam) {
       let displayTime = Date.now(); // time at which Adam was displayed.
+      let isDumm = line.pieces[currentPiece + 1].text.startsWith("dumm");
       let $a = $("<div id='" + getAdamId(currentLine, currentPiece) + "' class='target" +
-        (piece.who === "Isabel" ? " isa" : "") + "'" +
+        (piece.who === "Isabel" ? " isa" : (isDumm ? " dumm" : "")) + "'" +
         " onclick='clickAdam(" + currentLine + ", " + currentPiece + ", " + displayTime + ");'" +
         " onmouseover='hoverAdam(" + currentLine + ", " + currentPiece + ", " + displayTime + ");'>" +
-        "A<span class='dum'>" + (line.pieces[currentPiece + 1].text.startsWith("dumm") ? line.pieces[currentPiece + 1].text : "dam") + "</span></div>");
+        "A<span class='dum'>" + (isDumm ? line.pieces[currentPiece + 1].text : "dam") + "</span></div>");
       $a.css({top: piece.y, left: piece.x});
       $("#adams").append($a);
     }
@@ -119,10 +129,7 @@ function adamsDot() {
       currentPiece = 0;
       currentLine++;
       if (currentLine >= lines.length) {
-        // Finished with the song and animation.
-        console.log("Clearing timer");
-        clearInterval(timer);
-        gameOver = true;
+        endGame();
       }
       else {
         line = lines[currentLine];
@@ -134,6 +141,15 @@ function adamsDot() {
       }
     }
   }
+}
+
+function endGame() {
+  // Finished with the song and animation.
+  console.log("Clearing timer");
+  clearInterval(timer);
+  gameOver = true;
+  $(".target").remove();
+  $("#button-holder").html("<button type='button' onclick='startGame()'>Again! Again!</button><br>");
 }
 
 function getAdamId(lineIndex, pieceIndex) {
@@ -219,8 +235,9 @@ function escapeHtml(text) {
 
 function parseAdamTiming() {
   let lines = [];
+  let numLines = 0;
   for (let textLine of adamTiming.split("\n")) {
-    lines.push(new Line(textLine));
+    lines.push(new Line(textLine, numLines++));
   }
   for (let line of lines) {
     let dots = 0;
@@ -234,8 +251,8 @@ function parseAdamTiming() {
   return lines;
 }
 class Line {
-  constructor(line) {
-    this.pieces = parseLine(line);
+  constructor(line, numLines) {
+    this.pieces = parseLine(line,  numLines);
   }
 }
 
@@ -255,7 +272,7 @@ class Piece {
   }
 }
 
-function parseLine(line) {
+function parseLine(line, numLines) {
   let pieces = [];
   let currentText = "";
   let numDots = 0;
@@ -314,8 +331,15 @@ function parseLine(line) {
     let y2 = Math.random() * (windowHeight - h);
     for (let adamIndex = 0; adamIndex < adamPieces.length; adamIndex++) {
       let piece = adamPieces[adamIndex];
-      piece.x = interpolate(x1, x2, adamIndex, adamPieces.length);
-      piece.y = interpolate(y1, y2, adamIndex, adamPieces.length);
+      if (numLines >= 27) {
+        // Make the last two lines of Adams completely random.
+        piece.x = Math.random() * (windowWidth - w);
+        piece.y = Math.random() * (windowHeight - h);
+      }
+      else {
+        piece.x = interpolate(x1, x2, adamIndex, adamPieces.length);
+        piece.y = interpolate(y1, y2, adamIndex, adamPieces.length);
+      }
     }
   }
   return pieces;
