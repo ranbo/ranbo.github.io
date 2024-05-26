@@ -1,0 +1,61 @@
+body {
+    background-color: #46467c;
+}
+#scoreboard {
+    color: white;
+    font-size: x-large;
+}
+.score-label {
+    color: #f3e3a1;
+}
+#score,#total-score {
+    color: yellow;
+}
+#speed-bonus {
+    color: rgba(210, 210, 88, 0.66);
+}
+#total-score {
+    font-weight: bold;
+}
+#adam {
+    color: lawngreen;
+    position: relative;
+    font-size: large;
+}
+
+.Randy,.Isabel,.Adam {
+    position: relative;
+    display:inline;
+}
+
+.Isabel {
+    color: #fa5ca3;
+}
+
+.Randy {
+    color: #87fc3f;
+}
+
+.Adam {
+    color: #CCCCFF;
+}
+
+.target {
+    position: absolute;
+    color: darkgreen;
+    padding: 10px;
+    font-size: larger;
+    background-color: #CCCCFF;
+    border: 1px solid #9797ce;
+    border-radius: 10px;
+    box-shadow: 6px 6px 8px #222248;
+}
+
+.dum {
+    color: rgba(0, 100, 0, 0.5);
+}
+
+.isa {
+    background-color: #fa5ca3;
+}
+
