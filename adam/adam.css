@@ -23,7 +23,7 @@ body {
     font-size: large;
 }
 
-.Randy,.Isabel,.Adam {
+.Randy,.Isabel,.Adam,.letter {
     position: relative;
     display:inline;
 }

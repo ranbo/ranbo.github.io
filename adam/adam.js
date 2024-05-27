@@ -10,15 +10,22 @@ let speedBonus = 0;
 let scoreMultiplier = 1;
 let gameOver = false;
 let sounds;
+// Array of Floater objects being animated
+let floaters;
+let floaterTimer;
 
 const introDots = 32; // 2 measures of 4 beats x 4 "dots" per beat.
 const breathSectionDots = 416;
 const endSectionDots = 428;
-const randomDots = 428 + 64;
 
 const tempo140= 107.142857;
 const tempo220= 68.181818;
 const tempo200= 75;
+
+const animationInterval = 10; // ms between animation steps
+const gravity = 20 / (1000 / animationInterval);
+const rebound = .8;
+const maxV = 300 / (1000 / animationInterval);
 
 function theAdamShow() {
   song = new Audio("Adam.mp3");
@@ -42,7 +49,8 @@ function startGame() {
   $("#adam").html("");
   console.log("Playing song.");
   $("#button-holder").html("<button type='button' onclick='stopSong()'>Stop</button><br>");
-  song.play();
+  let promise = song.play();
+  promise.then();
   timer = setInterval(adamsDot, tempo140);
   score = 0;
   speedBonus = 0;
@@ -52,6 +60,8 @@ function startGame() {
   totalDots = 0;
   scoreMultiplier = 1;
   gameOver = false;
+  floaters = [];
+  floaterTimer = setInterval(moveFloaters, animationInterval);
   updateScore();
   return null;
 }
@@ -76,7 +86,7 @@ function adamsDot() {
   // Adam's Dot --------
   let line = lines[currentLine];
   let piece = line.pieces[currentPiece];
-  console.log("Dot: totalDots=" + totalDots + (totalDots < introDots ? "; intro..." : "; piece=" + piece.text + "; " + currentDots + "/" + piece.dots + " dots on current piece"));
+  //console.log("Dot: totalDots=" + totalDots + (totalDots < introDots ? "; intro..." : "; piece=" + piece.text + "; " + currentDots + "/" + piece.dots + " dots on current piece"));
 
   // Handle intro beats
   if (totalDots < introDots) {
@@ -86,12 +96,12 @@ function adamsDot() {
 
   // Handle tempo changes
   if (totalDots === breathSectionDots) {
-    console.log("Taking breath...");
+    //console.log("Taking breath...");
     clearInterval(timer);
     timer = setInterval(adamsDot, tempo220);
   }
   else if (totalDots === endSectionDots) {
-    console.log("End section...");
+    //console.log("End section...");
     clearInterval(timer);
     timer = setInterval(adamsDot, tempo200);
   }
@@ -108,13 +118,21 @@ function adamsDot() {
     if (piece.isAdam) {
       let displayTime = Date.now(); // time at which Adam was displayed.
       let isDumm = line.pieces[currentPiece + 1].text.startsWith("dumm");
-      let $a = $("<div id='" + getAdamId(currentLine, currentPiece) + "' class='target" +
+      let adamId = getAdamId(currentLine, currentPiece);
+      let $a = $("<div id='" + adamId + "' class='target" +
         (piece.who === "Isabel" ? " isa" : (isDumm ? " dumm" : "")) + "'" +
-        " onclick='clickAdam(" + currentLine + ", " + currentPiece + ", " + displayTime + ");'" +
-        " onmouseover='hoverAdam(" + currentLine + ", " + currentPiece + ", " + displayTime + ");'>" +
-        "A<span class='dum'>" + (isDumm ? line.pieces[currentPiece + 1].text : "dam") + "</span></div>");
+        " onclick='clickAdam(event, " + currentLine + ", " + currentPiece + ", " + displayTime + ");'" +
+        " onmouseover='hoverAdam(event, " + currentLine + ", " + currentPiece + ", " + displayTime + ");'>" +
+        "<div class='letter' id='" + (adamId + "-A") + "'>A</div>" +
+        "<span class='dum'>" +
+        (isDumm ? line.pieces[currentPiece + 1].text : "" +
+          "<div class='letter' id='" + (adamId + '-d') + "'>d</div>" +
+          "<div class='letter' id='" + (adamId + '-a') + "'>a</div>" +
+          "<div class='letter' id='" + (adamId + '-m') + "'>m</div>") +
+        "</span></div>");
       $a.css({top: piece.y, left: piece.x});
       $("#adams").append($a);
+      floaters.push(new Floater($a, piece.x, piece.y, $a.outerWidth(), $a.outerHeight(), piece.dx, piece.dy, false, true));
     }
     else if (piece.isDum) {
       $(".dum").removeClass("dum");
@@ -147,6 +165,7 @@ function endGame() {
   // Finished with the song and animation.
   console.log("Clearing timer");
   clearInterval(timer);
+  clearInterval(floaterTimer);
   gameOver = true;
   $(".target").remove();
   $("#button-holder").html("<button type='button' onclick='startGame()'>Again! Again!</button><br>");
@@ -156,10 +175,14 @@ function getAdamId(lineIndex, pieceIndex) {
   return "adam-" + lineIndex + "-" + pieceIndex;
 }
 
-function clickAdam(lineIndex, pieceIndex, displayTime, wasHover) {
-  // Future: Explode the letters.
-  // Future: Make a sound.
+function clickAdam(event, lineIndex, pieceIndex, displayTime, wasHover) {
+  event.preventDefault();
+  let clickPos = {top: event.y, left: event.x};
   let adamId = getAdamId(lineIndex, pieceIndex);
+  let aPos = $("#" + adamId + "-A").position();
+  let dPos = $("#" + adamId + "-d").position();
+  let uPos = $("#" + adamId + "-u").position();
+  let mPos = $("#" + adamId + "-m").position();
   $("#" + adamId).remove();
   if (!gameOver) {
     let soundIndex = wasHover ? 0 : 1;
@@ -212,10 +235,10 @@ function clickAdam(lineIndex, pieceIndex, displayTime, wasHover) {
 
 let soundRoundRobin = 0;
 
-function hoverAdam(lineIndex, pieceIndex, displayTime) {
+function hoverAdam(event, lineIndex, pieceIndex, displayTime) {
   // Don't delete on hover until 22 points (first verse), nor on final "Adummmmm", nor after game over.
   if (score >= 22 && !gameOver && !lines[lineIndex].pieces[pieceIndex + 1].text.startsWith("dumm")) {
-    clickAdam(lineIndex, pieceIndex, displayTime, true);
+    clickAdam(event, lineIndex, pieceIndex, displayTime, true);
   }
 }
 
@@ -253,6 +276,75 @@ function parseAdamTiming() {
 class Line {
   constructor(line, numLines) {
     this.pieces = parseLine(line,  numLines);
+  }
+}
+
+function moveFloaters() {
+  let toRemove = [];
+  for (let f = 0; f < floaters.length; f++) {
+    if (floaters[f].move()) {
+      toRemove.push(f);
+    }
+  }
+  for (let r = toRemove.length - 1; r >= 0; r--) {
+    floaters.splice(toRemove[r], 1);
+  }
+}
+
+class Floater {
+  constructor($div, x, y, w, h, dx, dy, hasGravity, isBouncy) {
+    this.$div = $div;
+    this.x = x;
+    this.y = y;
+    this.w = w;
+    this.h = h;
+    this.dx = dx;
+    this.dy = dy;
+    this.hasGravity = hasGravity;
+    this.isBouncy = isBouncy;
+  }
+
+  // Move a floater. Return true if it should be removed, or false otherwise.
+  move() {
+    this.$div.css({top: this.y, left: this.x});
+    let s = "<" + this.x + ", " + this.y + ">";
+    let maxX = $(window).width() - this.w - 1;
+    let maxY = $(window).height() - this.h - 1;
+    if (!this.isBouncy && (this.x > $(window).width() || this.x < -this.w || this.y > $(window).height())) {
+      // Doesn't bounce and went out of bounds, so remove it.
+      this.$div.remove();
+      return true;
+    }
+    this.x += this.dx;
+    this.y += this.dy;
+    s += " + <" + this.dx + ", " + this.dy + "> = <" + this.x + ", " + this.y + ">";
+    if (this.hasGravity) {
+      this.dy += gravity;
+    }
+    // console.log(s);
+    if (this.isBouncy) {
+      if (this.x > maxX) {
+        let tooFar = this.x - maxX;
+        this.x = Math.max(maxX - tooFar, 0);
+        // future: add boing sound
+        this.dx = -this.dx * rebound;
+      }
+      if (this.x < 0) {
+        this.x = Math.min(-this.x, maxX);
+        // future: add boing sound
+        this.dx = -this.dx * rebound;
+      }
+      if (this.y > maxY) {
+        let tooFar = this.y - maxY;
+        this.y = Math.max(maxY - tooFar, 0);
+        this.dy = -this.dy * rebound;
+      }
+      if (this.y < 0) {
+        this.y = Math.min(-this.y, maxY);
+        this.dy = -this.dy * rebound;
+      }
+    }
+    return false;
   }
 }
 
@@ -325,20 +417,36 @@ function parseLine(line, numLines) {
     let h = 45; //$a.outerHeight();
     let windowWidth = $(window).width();
     let windowHeight = $(window).height();
+    // Pick two endpoints, and distribute target Adams evenly from x1,y1 to x2,y2
     let x1 = Math.random() * (windowWidth - w);
     let y1 = Math.random() * (windowHeight - h);
     let x2 = Math.random() * (windowWidth - w);
     let y2 = Math.random() * (windowHeight - h);
+
+    // Pick two more endpoints and slowly move target Adams towards even points from tx1,ty1 to tx1,ty2
+    let tx1 = Math.random() * (windowWidth - w);
+    let ty1 = Math.random() * (windowHeight - h);
+    let tx2 = Math.random() * (windowWidth - w);
+    let ty2 = Math.random() * (windowHeight - h);
+    let v = Math.random() * maxV;
+
     for (let adamIndex = 0; adamIndex < adamPieces.length; adamIndex++) {
       let piece = adamPieces[adamIndex];
       if (numLines >= 27) {
         // Make the last two lines of Adams completely random.
         piece.x = Math.random() * (windowWidth - w);
         piece.y = Math.random() * (windowHeight - h);
+        piece.dx = Math.random() * v;
+        piece.dy = Math.random() * v;
       }
       else {
         piece.x = interpolate(x1, x2, adamIndex, adamPieces.length);
         piece.y = interpolate(y1, y2, adamIndex, adamPieces.length);
+        let tx = interpolate(tx1, tx2, adamIndex, adamPieces.length);
+        let ty = interpolate(ty1, ty2, adamIndex, adamPieces.length);
+        let maxSize = Math.max(windowWidth, windowHeight);
+        piece.dx = v * (tx - piece.x) / maxSize;
+        piece.dy = v * (ty - piece.y) / maxSize;
       }
     }
   }
