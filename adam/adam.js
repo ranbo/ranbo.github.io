@@ -77,6 +77,10 @@ function stopSong() {
   song.pause();
 }
 
+function isDumm(line) {
+  return line.pieces[currentPiece + 1].text.startsWith("dumm");
+}
+
 function adamsDot() {
   if (currentLine >= lines.length) {
     console.log("Error: Too many lines. Stopping.");
@@ -86,7 +90,6 @@ function adamsDot() {
   // Adam's Dot --------
   let line = lines[currentLine];
   let piece = line.pieces[currentPiece];
-  //console.log("Dot: totalDots=" + totalDots + (totalDots < introDots ? "; intro..." : "; piece=" + piece.text + "; " + currentDots + "/" + piece.dots + " dots on current piece"));
 
   // Handle intro beats
   if (totalDots < introDots) {
@@ -117,17 +120,16 @@ function adamsDot() {
     }
     if (piece.isAdam) {
       let displayTime = Date.now(); // time at which Adam was displayed.
-      let isDumm = line.pieces[currentPiece + 1].text.startsWith("dumm");
       let adamId = getAdamId(currentLine, currentPiece);
       let $a = $("<div id='" + adamId + "' class='target" +
-        (piece.who === "Isabel" ? " isa" : (isDumm ? " dumm" : "")) + "'" +
+        (piece.who === "Isabel" ? " isa" : (isDumm(line) ? " dumm" : "")) + "'" +
         " onclick='clickAdam(event, " + currentLine + ", " + currentPiece + ", " + displayTime + ");'" +
         " onmouseover='hoverAdam(event, " + currentLine + ", " + currentPiece + ", " + displayTime + ");'>" +
-        "<div class='letter' id='" + (adamId + "-A") + "'>A</div>" +
+        "<div class='letter' id='" + (adamId + "-a") + "'>A</div>" +
         "<span class='dum'>" +
-        (isDumm ? line.pieces[currentPiece + 1].text : "" +
+        (isDumm(line) ? line.pieces[currentPiece + 1].text :
           "<div class='letter' id='" + (adamId + '-d') + "'>d</div>" +
-          "<div class='letter' id='" + (adamId + '-a') + "'>a</div>" +
+          "<div class='letter' id='" + (adamId + '-u') + "'>a</div>" +
           "<div class='letter' id='" + (adamId + '-m') + "'>m</div>") +
         "</span></div>");
       $a.css({top: piece.y, left: piece.x});
@@ -177,60 +179,105 @@ function getAdamId(lineIndex, pieceIndex) {
 
 function clickAdam(event, lineIndex, pieceIndex, displayTime, wasHover) {
   event.preventDefault();
-  let clickPos = {top: event.y, left: event.x};
-  let adamId = getAdamId(lineIndex, pieceIndex);
-  let aPos = $("#" + adamId + "-A").position();
-  let dPos = $("#" + adamId + "-d").position();
-  let uPos = $("#" + adamId + "-u").position();
-  let mPos = $("#" + adamId + "-m").position();
-  $("#" + adamId).remove();
-  if (!gameOver) {
-    let soundIndex = wasHover ? 0 : 1;
-    let elapsedTime = Date.now() - displayTime;
-    let bonusRate = Math.max((1000 - elapsedTime) / 1000, 0);
-    bonusRate = bonusRate * bonusRate;
-    let piece = lines[lineIndex].pieces[pieceIndex];
-    let isIsabel = piece.who === "Isabel";
-    let prevScore = score;
-    if (isIsabel) {
-      // 2x points for Isabel
-      score += 2 * scoreMultiplier;
-      soundIndex = 2; // louder pop for these
-    }
-    else if (lines[lineIndex].pieces[pieceIndex + 1].text.startsWith("dumm")) {
-      score += 100 * scoreMultiplier;
-      soundIndex = 3;
-    }
-    else {
-      score += scoreMultiplier;
-    }
-    if (prevScore < 64 && score >= 64) {
-      // Crossed 64-point threshold, so now multiply scores by 1000
-      scoreMultiplier = 1000;
-      score *= 1000;
-      soundIndex = 3; // "boip!"
-      $("body").css("background", "#6675b2");
-    }
-    if (prevScore < 22 && score >= 22) {
-      soundIndex = 3; // "boip!"
-      $("body").css("background", "#6262a9");
-    }
-
-    if (soundIndex === 0) {
-      // Since sound '0' happens from hover, and can happen quickly, rotate between 10 copies of that sound,
-      //  so that they can play simultaneously.
-      soundIndex = soundRoundRobin++;
-      if (soundRoundRobin >= sounds.length) {
-        soundRoundRobin = 0;
-      }
-      if (soundRoundRobin > 0 && soundRoundRobin <= 3) {
-        soundRoundRobin = 4;
-      }
-    }
-    sounds[soundIndex].play();
-    speedBonus += bonusRate * (score - prevScore);
-    updateScore();
+  let $clickedAdam = $("#" + getAdamId(lineIndex, pieceIndex));
+  explodeAdam(event.x, event.y, $clickedAdam, lineIndex, pieceIndex);
+  $clickedAdam.remove();
+  let soundIndex = wasHover ? 0 : 1;
+  let elapsedTime = Date.now() - displayTime;
+  let bonusRate = Math.max((1000 - elapsedTime) / 1000, 0);
+  bonusRate = bonusRate * bonusRate;
+  let piece = lines[lineIndex].pieces[pieceIndex];
+  let isIsabel = piece.who === "Isabel";
+  let prevScore = score;
+  if (isIsabel) {
+    // 2x points for Isabel
+    score += 2 * scoreMultiplier;
+    soundIndex = 2; // louder pop for these
   }
+  else if (lines[lineIndex].pieces[pieceIndex + 1].text.startsWith("dumm")) {
+    score += 100 * scoreMultiplier;
+    soundIndex = 3;
+  }
+  else {
+    score += scoreMultiplier;
+  }
+  if (prevScore < 64 && score >= 64) {
+    // Crossed 64-point threshold, so now multiply scores by 1000
+    scoreMultiplier = 1000;
+    score *= 1000;
+    soundIndex = 3; // "boip!"
+    $("body").css("background", "#6675b2");
+  }
+  if (prevScore < 22 && score >= 22) {
+    soundIndex = 3; // "boip!"
+    $("body").css("background", "#6262a9");
+  }
+
+  if (soundIndex === 0) {
+    // Since sound '0' happens from hover, and can happen quickly, rotate between 10 copies of that sound,
+    //  so that they can play simultaneously.
+    soundIndex = soundRoundRobin++;
+    if (soundRoundRobin >= sounds.length) {
+      soundRoundRobin = 0;
+    }
+    if (soundRoundRobin > 0 && soundRoundRobin <= 3) {
+      soundRoundRobin = 4;
+    }
+  }
+  sounds[soundIndex].play();
+  speedBonus += bonusRate * (score - prevScore);
+  updateScore();
+}
+
+function explodeAdam(x, y, $clickedAdam, lineIndex, pieceIndex) {
+  let piece = lines[lineIndex].pieces[pieceIndex];
+  let adamId = getAdamId(lineIndex, pieceIndex);
+  let adamPos = $clickedAdam.position();
+  if (lines[lineIndex].pieces[pieceIndex + 1].text.startsWith("dumm")) {
+    let text = "A" + lines[lineIndex].pieces[pieceIndex + 1].text;
+    let pos = getPosition(adamId + "-a", adamPos);
+    let x1 = pos.x;
+    for (let i = 0; i < text.length; i++) {
+      pos.x = x1 + pos.w * i;
+      makeLetter(text[i], pos, x, y, piece.dx, piece.dy);
+    }
+  }
+  else {
+    let aPos = getPosition(adamId + "-a", adamPos);
+    let dPos = getPosition(adamId + "-d", adamPos);
+    let uPos = getPosition(adamId + "-u", adamPos);
+    let mPos = getPosition(adamId + "-m", adamPos);
+    makeLetter("A", aPos, x, y, piece.dx, piece.dy);
+    makeLetter("d", dPos, x, y, piece.dx, piece.dy);
+    makeLetter("a", uPos, x, y, piece.dx, piece.dy);
+    makeLetter("m", mPos, x, y, piece.dx, piece.dy);
+  }
+}
+
+function makeLetter(letter, letterPos, clickX, clickY, dx, dy) {
+  let cx = letterPos.x + letterPos.w / 2;
+  let cy = letterPos.y + letterPos.h / 2;
+  let xDiff = cx - clickX;
+  let yDiff = cy - clickY;
+  let len = xDiff * xDiff + yDiff * yDiff;
+  len = len === 0 ? 0 : Math.sqrt(len);
+  xDiff = len === 0 ? 0 : xDiff / len;
+  yDiff = len === 0 ? 0 : yDiff / len;
+  let $letter = $("<div class='explosion'>" + letter + "</div>");
+  $("#adams").append($letter);
+  let newDx = dx + xDiff * maxV;
+  let newDy = dy + yDiff * maxV;
+  floaters.push(new Floater($letter, letterPos.x, letterPos.y, letterPos.w, letterPos.h, newDx, newDy, true, false));
+}
+
+function getPosition(elementId, parentPosition) {
+  let $element = $("#" + elementId);
+  let relativePos = $element.position();
+  return {
+    x: parentPosition.left + relativePos.left,
+    y: parentPosition.top + relativePos.top,
+    w: $element.outerWidth(),
+    h: $element.outerHeight()};
 }
 
 let soundRoundRobin = 0;
@@ -269,10 +316,11 @@ function parseAdamTiming() {
       dots += piece.dots;
       text += piece.text + piece.suffix;
     }
-    console.log(dots + ": " + text);
+    // console.log(dots + ": " + text);
   }
   return lines;
 }
+
 class Line {
   constructor(line, numLines) {
     this.pieces = parseLine(line,  numLines);
@@ -307,7 +355,6 @@ class Floater {
   // Move a floater. Return true if it should be removed, or false otherwise.
   move() {
     this.$div.css({top: this.y, left: this.x});
-    let s = "<" + this.x + ", " + this.y + ">";
     let maxX = $(window).width() - this.w - 1;
     let maxY = $(window).height() - this.h - 1;
     if (!this.isBouncy && (this.x > $(window).width() || this.x < -this.w || this.y > $(window).height())) {
@@ -317,11 +364,9 @@ class Floater {
     }
     this.x += this.dx;
     this.y += this.dy;
-    s += " + <" + this.dx + ", " + this.dy + "> = <" + this.x + ", " + this.y + ">";
     if (this.hasGravity) {
       this.dy += gravity;
     }
-    // console.log(s);
     if (this.isBouncy) {
       if (this.x > maxX) {
         let tooFar = this.x - maxX;

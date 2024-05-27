@@ -1,5 +1,6 @@
 body {
     background-color: #46467c;
+    user-select: none;
 }
 #scoreboard {
     color: white;
@@ -49,6 +50,12 @@ body {
     border: 1px solid #9797ce;
     border-radius: 10px;
     box-shadow: 6px 6px 8px #222248;
+    cursor: pointer;
+}
+
+.explosion {
+    position: absolute;
+    color: lawngreen;
 }
 
 .dum {
@@ -61,4 +68,3 @@ body {
 .isa {
     background-color: #fa5ca3;
 }
-
