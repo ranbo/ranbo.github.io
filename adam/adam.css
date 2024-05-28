@@ -1,6 +1,7 @@
 body {
     background-color: #46467c;
     user-select: none;
+    overflow: hidden;
 }
 #scoreboard {
     color: white;

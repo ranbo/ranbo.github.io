@@ -153,7 +153,7 @@ function adamsDot() {
         "</span></div>");
       $a.css({top: piece.y, left: piece.x});
       $("#adams").append($a);
-      floaters.push(new Floater($a, piece.x, piece.y, $a.outerWidth(), $a.outerHeight(), piece.dx, piece.dy, false, true));
+      floaters.push(new Floater($a, piece.x, piece.y, $a.outerWidth(), $a.outerHeight(), piece.dx, piece.dy, false, true, currentLine, currentPiece));
     }
     else if (piece.isDum) {
       $(".dum").removeClass("dum");
@@ -190,14 +190,26 @@ function stopSong() {
 
 function endGame() {
   // Finished with the song and animation.
-  console.log("Clearing timer");
   clearInterval(timer);
-  clearInterval(floaterTimer);
+  // clearInterval(floaterTimer);
   gameOver = true;
-  $(".target").remove();
-  $("#adams").html("");
+  explodeAll();
+  // $(".target").remove();
+  // $("#adams").html("");
   $("#button-holder").html("<button type='button' onclick='startGame()'>Again! Again!</button>");
   $("#tabs").show();
+  setTimeout(clearBouncy, 10000);
+}
+
+// Make all floaters non-bouncy, so they'll fall off the bottom of the screen and be cleared,
+//   resulting in the floaterTimer getting halted.
+function clearBouncy() {
+  if (gameOver && floaters.length > 0) {
+    for (let floater of floaters) {
+      floater.isBouncy = false;
+      floater.hasGravity = true;
+    }
+  }
 }
 
 function getAdamId(lineIndex, pieceIndex) {
@@ -256,6 +268,20 @@ function clickAdam(event, lineIndex, pieceIndex, displayTime, wasHover) {
   updateScore();
 }
 
+function explodeAll() {
+  for (let floater of floaters) {
+    if (floater.lineIndex >= 0) {
+      let x = floater.x + floater.w / 2;
+      let y = floater.y + floater.h;
+      explodeAdam(x, y, floater.$div, floater.lineIndex, floater.pieceIndex);
+      floater.$div.remove();
+    }
+  }
+  for (let floater of floaters) {
+    floater.isBouncy = true;
+  }
+}
+
 function explodeAdam(x, y, $clickedAdam, lineIndex, pieceIndex) {
   let piece = lines[lineIndex].pieces[pieceIndex];
   let adamId = getAdamId(lineIndex, pieceIndex);
@@ -294,7 +320,7 @@ function makeLetter(letter, letterPos, clickX, clickY, dx, dy) {
   $("#adams").append($letter);
   let newDx = dx + xDiff * maxV;
   let newDy = dy + yDiff * maxV;
-  floaters.push(new Floater($letter, letterPos.x, letterPos.y, letterPos.w, letterPos.h, newDx, newDy, true, false));
+  floaters.push(new Floater($letter, letterPos.x, letterPos.y, letterPos.w, letterPos.h, newDx, newDy, true, false, -1, -1));
 }
 
 function getPosition(elementId, parentPosition) {
@@ -355,6 +381,7 @@ class Line {
 }
 
 function moveFloaters() {
+  console.log("Moving floaters...");
   let toRemove = [];
   for (let f = 0; f < floaters.length; f++) {
     if (floaters[f].move()) {
@@ -364,10 +391,14 @@ function moveFloaters() {
   for (let r = toRemove.length - 1; r >= 0; r--) {
     floaters.splice(toRemove[r], 1);
   }
+  if (gameOver && floaters.length === 0) {
+    clearInterval(floaterTimer);
+    $("#adams").html("");
+  }
 }
 
 class Floater {
-  constructor($div, x, y, w, h, dx, dy, hasGravity, isBouncy) {
+  constructor($div, x, y, w, h, dx, dy, hasGravity, isBouncy, lineIndex, pieceIndex) {
     this.$div = $div;
     this.x = x;
     this.y = y;
@@ -377,6 +408,8 @@ class Floater {
     this.dy = dy;
     this.hasGravity = hasGravity;
     this.isBouncy = isBouncy;
+    this.lineIndex = lineIndex; // -1 if a letter rather than an "Adam".
+    this.pieceIndex = pieceIndex;
   }
 
   // Move a floater. Return true if it should be removed, or false otherwise.
