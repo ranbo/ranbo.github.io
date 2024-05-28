@@ -22,7 +22,7 @@ const tempo140= 107.142857;
 const tempo220= 68.181818;
 const tempo200= 75;
 
-const animationInterval = 10; // ms between animation steps
+const animationInterval = 20; // ms between animation steps
 const gravity = 20 / (1000 / animationInterval);
 const rebound = .8;
 const maxV = 300 / (1000 / animationInterval);
@@ -189,15 +189,16 @@ function stopSong() {
 }
 
 function endGame() {
-  // Finished with the song and animation.
+  // Finished with the song, so no more "dots" need to be consumed.
   clearInterval(timer);
-  // clearInterval(floaterTimer);
+  // Wait to clear the 'floater' timer, however, until all the exploded letters fall.
   gameOver = true;
   explodeAll();
   // $(".target").remove();
   // $("#adams").html("");
   $("#button-holder").html("<button type='button' onclick='startGame()'>Again! Again!</button>");
   $("#tabs").show();
+  // Wait 10 seconds for all the bouncy things to stop bouncing, then let them fall off the bottom.
   setTimeout(clearBouncy, 10000);
 }
 
@@ -220,7 +221,6 @@ function clickAdam(event, lineIndex, pieceIndex, displayTime, wasHover) {
   event.preventDefault();
   let $clickedAdam = $("#" + getAdamId(lineIndex, pieceIndex));
   explodeAdam(event.x, event.y, $clickedAdam, lineIndex, pieceIndex);
-  $clickedAdam.remove();
   let soundIndex = wasHover ? 0 : 1;
   let elapsedTime = Date.now() - displayTime;
   let bonusRate = Math.max((1000 - elapsedTime) / 1000, 0);
@@ -269,12 +269,13 @@ function clickAdam(event, lineIndex, pieceIndex, displayTime, wasHover) {
 }
 
 function explodeAll() {
-  for (let floater of floaters) {
-    if (floater.lineIndex >= 0) {
+  for (let f = 0; f < floaters.length; f++) {
+    let floater = floaters[f];
+    if (floater.isAdam) {
       let x = floater.x + floater.w / 2;
       let y = floater.y + floater.h;
       explodeAdam(x, y, floater.$div, floater.lineIndex, floater.pieceIndex);
-      floater.$div.remove();
+      f--;
     }
   }
   for (let floater of floaters) {
@@ -305,6 +306,13 @@ function explodeAdam(x, y, $clickedAdam, lineIndex, pieceIndex) {
     makeLetter("a", uPos, x, y, piece.dx, piece.dy);
     makeLetter("m", mPos, x, y, piece.dx, piece.dy);
   }
+  $clickedAdam.remove();
+  for (let f = 0; f < floaters.length; f++) {
+    if (floaters[f].lineIndex === lineIndex && floaters[f].pieceIndex === pieceIndex) {
+      floaters.splice(f, 1);
+      return;
+    }
+  }
 }
 
 function makeLetter(letter, letterPos, clickX, clickY, dx, dy) {
@@ -318,6 +326,7 @@ function makeLetter(letter, letterPos, clickX, clickY, dx, dy) {
   yDiff = len === 0 ? 0 : yDiff / len;
   let $letter = $("<div class='explosion'>" + letter + "</div>");
   $("#adams").append($letter);
+  $letter.css({top: letterPos.y, left: letterPos.x});
   let newDx = dx + xDiff * maxV;
   let newDy = dy + yDiff * maxV;
   floaters.push(new Floater($letter, letterPos.x, letterPos.y, letterPos.w, letterPos.h, newDx, newDy, true, false, -1, -1));
@@ -381,7 +390,6 @@ class Line {
 }
 
 function moveFloaters() {
-  console.log("Moving floaters...");
   let toRemove = [];
   for (let f = 0; f < floaters.length; f++) {
     if (floaters[f].move()) {
@@ -399,6 +407,7 @@ function moveFloaters() {
 
 class Floater {
   constructor($div, x, y, w, h, dx, dy, hasGravity, isBouncy, lineIndex, pieceIndex) {
+    this.isAdam = lineIndex >= 0;
     this.$div = $div;
     this.x = x;
     this.y = y;
@@ -547,11 +556,17 @@ function parseLine(line, numLines) {
       else {
         piece.x = interpolate(x1, x2, adamIndex, adamPieces.length);
         piece.y = interpolate(y1, y2, adamIndex, adamPieces.length);
-        let tx = interpolate(tx1, tx2, adamIndex, adamPieces.length);
-        let ty = interpolate(ty1, ty2, adamIndex, adamPieces.length);
-        let maxSize = Math.max(windowWidth, windowHeight);
-        piece.dx = v * (tx - piece.x) / maxSize;
-        piece.dy = v * (ty - piece.y) / maxSize;
+        if (numLines < 4) {
+          piece.dx = 0;
+          piece.dy = 0;
+        }
+        else {
+          let tx = interpolate(tx1, tx2, adamIndex, adamPieces.length);
+          let ty = interpolate(ty1, ty2, adamIndex, adamPieces.length);
+          let maxSize = Math.max(windowWidth, windowHeight);
+          piece.dx = v * (tx - piece.x) / maxSize;
+          piece.dy = v * (ty - piece.y) / maxSize;
+        }
       }
     }
   }
