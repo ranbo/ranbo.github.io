@@ -24,11 +24,32 @@ body {
     font-size: large;
 }
 
-.Randy,.Isabel,.Adam,.letter {
+.Randy,.Isabel,.Adam,.letter,#button-holder,#tabs {
     position: relative;
-    display:inline;
+    display: inline;
 }
 
+a:link,a:visited,#tabs {
+    color: #c6c6e5;
+}
+a:hover {
+    color: #e9e9ef
+}
+a:active {
+    color: #7777e5;
+}
+.selected-link {
+    background-color: #6363dc;
+}
+
+#instructions,#backstory {
+    display: inline;
+    color: #e7e3ec;
+    font-size: large;
+}
+#backstory {
+    display: none;
+}
 .Isabel {
     color: #fa5ca3;
 }
@@ -68,3 +89,4 @@ body {
 .isa {
     background-color: #fa5ca3;
 }
+

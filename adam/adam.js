@@ -28,15 +28,15 @@ const rebound = .8;
 const maxV = 300 / (1000 / animationInterval);
 
 function theAdamShow() {
-  song = new Audio("Adam.mp3");
+  song = new Audio("sounds/Adam.mp3");
   song.load();
-  let tinyPop = new Audio("tiny-pop.mp3");
-  let bup = new Audio("bup.mp3");
-  let jpop = new Audio("JPop.mp3");
-  let boip = new Audio("boip.mp3");
+  let tinyPop = new Audio("sounds/tiny-pop.mp3");
+  let bup = new Audio("sounds/bup.mp3");
+  let jpop = new Audio("sounds/JPop.mp3");
+  let boip = new Audio("sounds/boip.mp3");
   sounds = [tinyPop, bup, jpop, boip];
-  for (let i = 0; i < 10; i++) {
-    sounds.push(new Audio("tiny-pop.mp3"));
+  for (let i = 0; i < 40; i++) {
+    sounds.push(new Audio("sounds/tiny-pop.mp3"));
   }
   for (let sound of sounds) {
     sound.load();
@@ -44,14 +44,46 @@ function theAdamShow() {
   startGame(lines);
 }
 
+function showInstructions() {
+  $("#adam").hide();
+  $("#adams").hide();
+  $("#backstory").hide();
+  $("#instructions").show();
+  $("#story-link").removeClass("selected-link");
+  $("#instructions-link").addClass("selected-link");
+}
+
+function showBackstory() {
+  $("#adam").hide();
+  $("#adams").hide();
+  $("#instructions").hide();
+  $("#backstory").show();
+  $("#story-link").addClass("selected-link");
+  $("#instructions-link").removeClass("selected-link");
+}
+
 function startGame() {
-  lines = parseAdamTiming();
-  $("#adam").html("");
-  console.log("Playing song.");
+  $("#instructions").hide();
+  $("#backstory").hide();
+  $("#tabs").hide();
+  $("#story-link").removeClass("selected-link");
+  $("#instructions-link").removeClass("selected-link");
+
+  let $adam = $("#adam");
+  $adam.html("");
+  $adam.show();
+  let $adams = $("#adams");
+  $adams.html("");
+  $adams.show();
+
   $("#button-holder").html("<button type='button' onclick='stopSong()'>Stop</button><br>");
+
+  lines = parseAdamTiming();
+
   let promise = song.play();
   promise.then();
   timer = setInterval(adamsDot, tempo140);
+
   score = 0;
   speedBonus = 0;
   currentLine = 0;
@@ -72,21 +104,7 @@ function updateScore() {
   $("#total-score").text(Math.round(score + speedBonus));
 }
 
-function stopSong() {
-  clearInterval(timer);
-  song.pause();
-}
-
-function isDumm(line) {
-  return line.pieces[currentPiece + 1].text.startsWith("dumm");
-}
-
 function adamsDot() {
-  if (currentLine >= lines.length) {
-    console.log("Error: Too many lines. Stopping.");
-    clearInterval(timer);
-    return;
-  }
   // Adam's Dot --------
   let line = lines[currentLine];
   let piece = line.pieces[currentPiece];
@@ -121,13 +139,14 @@ function adamsDot() {
     if (piece.isAdam) {
       let displayTime = Date.now(); // time at which Adam was displayed.
       let adamId = getAdamId(currentLine, currentPiece);
+      let isDumm = line.pieces[currentPiece + 1].text.startsWith("dumm");
       let $a = $("<div id='" + adamId + "' class='target" +
-        (piece.who === "Isabel" ? " isa" : (isDumm(line) ? " dumm" : "")) + "'" +
+        (piece.who === "Isabel" ? " isa" : (isDumm ? " dumm" : "")) + "'" +
         " onclick='clickAdam(event, " + currentLine + ", " + currentPiece + ", " + displayTime + ");'" +
         " onmouseover='hoverAdam(event, " + currentLine + ", " + currentPiece + ", " + displayTime + ");'>" +
         "<div class='letter' id='" + (adamId + "-a") + "'>A</div>" +
         "<span class='dum'>" +
-        (isDumm(line) ? line.pieces[currentPiece + 1].text :
+        (isDumm ? line.pieces[currentPiece + 1].text :
           "<div class='letter' id='" + (adamId + '-d') + "'>d</div>" +
           "<div class='letter' id='" + (adamId + '-u') + "'>a</div>" +
           "<div class='letter' id='" + (adamId + '-m') + "'>m</div>") +
@@ -163,6 +182,12 @@ function adamsDot() {
   }
 }
 
+function stopSong() {
+  song.pause();
+  song.currentTime = 0;
+  endGame();
+}
+
 function endGame() {
   // Finished with the song and animation.
   console.log("Clearing timer");
@@ -170,7 +195,9 @@ function endGame() {
   clearInterval(floaterTimer);
   gameOver = true;
   $(".target").remove();
-  $("#button-holder").html("<button type='button' onclick='startGame()'>Again! Again!</button><br>");
+  $("#adams").html("");
+  $("#button-holder").html("<button type='button' onclick='startGame()'>Again! Again!</button>");
+  $("#tabs").show();
 }
 
 function getAdamId(lineIndex, pieceIndex) {

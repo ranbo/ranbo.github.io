@@ -13,12 +13,72 @@
 </head>
 <body>
 <div id="scoreboard">The Adam Game! <span class="score-label">Score:&nbsp;</span><span id='score'>0</span>
-  <span class="score-label">Speed bonus:&nbsp;</span><span id="speed-bonus"></span>
-  <span class="score-label">Total score:&nbsp;</span><span id="total-score"></span>
-  <br>
-  <div id="button-holder"><button id="adam-button" type="button" onclick="theAdamShow()">Start</button></div>
+  <span class="score-label">Speed bonus:&nbsp;</span><span id="speed-bonus">0</span>
+  <span class="score-label">Total score:&nbsp;</span><span id="total-score">0</span>
 </div>
+<div id="button-holder"><button id="adam-button" type="button" onclick="theAdamShow()">Start</button></div>
+<div id="tabs"> &nbsp;
+  <a id="instructions-link" class="selected-link" onclick="showInstructions()">Instructions</a> &nbsp;
+  <a id="story-link" onclick="showBackstory()">Back Story</a>
+</div>
+<p>
 <div id="adam"></div>
+
+<div id="instructions">
+  Welcome to the Adam Game!
+  <ul>
+  <li> Click each "Adam" as it appears.
+    <ul>
+      <li> Clicking faster earns bonus points.</li>
+      <li> Isabel's Adams are worth double.</li>
+    </ul></li>
+  <li> Turbo-auto-click is enabled after clearing the Adams from the first verse, so you can just move over the Adams to clear them.</li>
+  <li> After 64 points, all scores are multiplied by 1000!</li>
+  <li> The final "Adummmmmm" is worth 100,000 points, but you have to click it.</li>
+  </ul>
+</div>
+
+<div id="backstory">
+
+  When COVID first hit, our oldest son Adam happened to be staying with us
+  for a few months while he was waiting for his next apartment to be ready.<p>
+
+  Isabel was our wonderful foreign exchange student from Spain, and she was
+  staying with us at that same time.<p>
+
+  She never had an older brother to torment, so when we asked her
+  to go downstairs to tell our son Adam that it was time for dinner,
+  she took great delight in calling out "Adam! Adam! A-DUM! A-DUM!
+  Adamadamadamadamadam!!!"<p>
+
+  Adam was always very chill in his response to this.<p>
+
+  One day at a dinner for the exchange students, Adam, Isabel and I
+  were standing in line to get some food, and Isabel turned to Adam and said,
+  "Adamadamadamadamadam".<p>
+
+  Meanwhile, Adam calmly replied, "Yes? May I help you?".<p>
+
+  So I decided to make a song about it.<p>
+
+  Adam said, "You can't have too many Adams in a song." I replied, "We'll see."<p>
+
+  After writing the ground-breaking lyrics and recording a first draft
+  of the song, I had Isabel sing her part. Then I invited Adam in to
+  record him. "Say 'Yes?'", I told him, and he did so. Then I said,
+  "Say 'Oh, ok.'", and he complied. "Ok!" I told him, "That will do."<p>
+
+  He laughed as he looked at this big complicated Logic Pro project,
+  and said, "Yeah, don't worry about any of the rest of this!"<p>
+
+  When it was done, I played the song for him and the rest of the family
+  and ever since then, our family has often said Adam more times than
+  necessary when addressing him.<p>
+
+  Instead of creating a music video to go with this song,
+  I thought it would be fun to make a video game out of it instead,
+  which I did for Adam's 31st birthday.
+</div>
 <div id="adams"></div>
 </body>
 </html>
