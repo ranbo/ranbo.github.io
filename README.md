@@ -41,7 +41,7 @@ and ever since then, our family has often said Adam more times than
 necessary when addressing him.
 
 Instead of creating a music video to go with this song,
-I thought it would be fun to make a video game out of it instead,
+I thought it would be fun to make a video game out of it,
 which I did for his 31st birthday.
 
 ## GitHub
