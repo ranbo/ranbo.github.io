@@ -189,6 +189,9 @@ function stopSong() {
 }
 
 function endGame() {
+  $body = $("body");
+  $body.removeClass("level2");
+  $body.removeClass("level3");
   // Finished with the song, so no more "dots" need to be consumed.
   clearInterval(timer);
   // Wait to clear the 'floater' timer, however, until all the exploded letters fall.
@@ -245,11 +248,11 @@ function clickAdam(event, lineIndex, pieceIndex, displayTime, wasHover) {
     scoreMultiplier = 1000;
     score *= 1000;
     soundIndex = 3; // "boip!"
-    $("body").css("background", "#6675b2");
+    $("body").addClass("level2");
   }
   if (prevScore < 22 && score >= 22) {
     soundIndex = 3; // "boip!"
-    $("body").css("background", "#6262a9");
+    $("body").addClass("level3");
   }
 
   if (soundIndex === 0) {
