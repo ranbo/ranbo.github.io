@@ -9,6 +9,7 @@ let score = 0;
 let speedBonus = 0;
 let scoreMultiplier = 1;
 let gameOver = false;
+let justListen = false;
 let sounds;
 // Array of Floater objects being animated
 let floaters;
@@ -27,7 +28,7 @@ const gravity = 20 / (1000 / animationInterval);
 const rebound = .8;
 const maxV = 300 / (1000 / animationInterval);
 
-function theAdamShow() {
+function theAdamShow(shouldJustListen) {
   song = new Audio("sounds/Adam.mp3");
   song.load();
   let tinyPop = new Audio("sounds/tiny-pop.mp3");
@@ -41,7 +42,7 @@ function theAdamShow() {
   for (let sound of sounds) {
     sound.load();
   }
-  startGame(lines);
+  startGame(shouldJustListen);
 }
 
 function showInstructions() {
@@ -62,13 +63,15 @@ function showBackstory() {
   $("#instructions-link").removeClass("selected-link");
 }
 
-function startGame() {
+function startGame(shouldJustListen) {
+  justListen = shouldJustListen;
   $("#instructions").hide();
   $("#backstory").hide();
   $("#tabs").hide();
   $("#story-link").removeClass("selected-link");
   $("#instructions-link").removeClass("selected-link");
-
+  // Avoid scrollbars popping up when falling letters drop below the bottom of the screen.
+  $("body").css({overflow: "hidden"});
   let $adam = $("#adam");
   $adam.html("");
   $adam.show();
@@ -136,7 +139,7 @@ function adamsDot() {
     } else if (piece.suffix === "\n") {
       $adam.append("<br>\n");
     }
-    if (piece.isAdam) {
+    if (piece.isAdam && !justListen) {
       let displayTime = Date.now(); // time at which Adam was displayed.
       let adamId = getAdamId(currentLine, currentPiece);
       let isDumm = line.pieces[currentPiece + 1].text.startsWith("dumm");
@@ -199,7 +202,7 @@ function endGame() {
   explodeAll();
   // $(".target").remove();
   // $("#adams").html("");
-  $("#button-holder").html("<button type='button' onclick='startGame()'>Again! Again!</button>");
+  $("#button-holder").html("<button type='button' onclick='startGame(false)'>Again! Again!</button>");
   $("#tabs").show();
   // Wait 10 seconds for all the bouncy things to stop bouncing, then let them fall off the bottom.
   setTimeout(clearBouncy, 10000);
@@ -405,6 +408,7 @@ function moveFloaters() {
   if (gameOver && floaters.length === 0) {
     clearInterval(floaterTimer);
     $("#adams").html("");
+    $("body").css({overflow: "auto"});
   }
 }
 
@@ -600,7 +604,7 @@ let adamTiming =
   'A.dam,... A.dam,... A.dam,... A.dam...\n' +
   'A.dam,... A.dam,... A.dam,... A.dam...\n' +
   'A..dam,.. A..dam,.. A..dam..\n' +
-  'time.. to.. eat;;;;\n' +
+  'Time.. to.. eat;;;;\n' +
   '\n' +
   'A.dam.-A.dam. A.dam.-A.dam. A.dam.-A.dam. A.dam.-A.dam.\n' +
   'A.dam.-A.dam. A.dam.-A.dam. A.dam.-A.dam. A.dam.-A.dam.\n' +

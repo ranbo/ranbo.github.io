@@ -1,7 +1,6 @@
 body {
     background-color: #31316c;
     user-select: none;
-    overflow: hidden;
 }
 #scoreboard {
     color: white;
@@ -40,7 +39,9 @@ a:active {
     color: #7777e5;
 }
 .selected-link {
-    background-color: #6363dc;
+    /*background-color: #6363dc;*/
+    text-decoration: underline;
+    color: #b4a2ea;
 }
 
 #instructions,#backstory {
@@ -96,4 +97,6 @@ a:active {
 .level3 {
     background-color: #54549f;
 }
-
+#just-listen {
+    background-color: #b272dc;
+}

@@ -16,10 +16,11 @@
   <span class="score-label">Speed bonus:&nbsp;</span><span id="speed-bonus">0</span>
   <span class="score-label">Total score:&nbsp;</span><span id="total-score">0</span>
 </div>
-<div id="button-holder"><button id="adam-button" type="button" onclick="theAdamShow()">Start</button></div>
+<div id="button-holder"><button id="adam-button" type="button" onclick="theAdamShow(false)">Play</button></div>
 <div id="tabs"> &nbsp;
   <a id="instructions-link" class="selected-link" onclick="showInstructions()">Instructions</a> &nbsp;
-  <a id="story-link" onclick="showBackstory()">Back Story</a>
+  <a id="story-link" onclick="showBackstory()">Back Story</a> &nbsp;
+  <button id="just-listen" onclick="theAdamShow(true)">Just listen</button>
 </div>
 <p>
 <div id="adam"></div>
