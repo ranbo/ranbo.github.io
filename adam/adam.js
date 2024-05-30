@@ -229,7 +229,7 @@ function clickAdam(event, lineIndex, pieceIndex, displayTime, wasHover) {
   explodeAdam(event.x, event.y, $clickedAdam, lineIndex, pieceIndex);
   let soundIndex = wasHover ? 0 : 1;
   let elapsedTime = Date.now() - displayTime;
-  let bonusRate = Math.max((1000 - elapsedTime) / 1000, 0);
+  let bonusRate = Math.max((2000 - elapsedTime) / 2000, 0);
   bonusRate = bonusRate * bonusRate;
   let piece = lines[lineIndex].pieces[pieceIndex];
   let isIsabel = piece.who === "Isabel";
