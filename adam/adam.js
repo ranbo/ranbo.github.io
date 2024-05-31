@@ -10,7 +10,16 @@ let speedBonus = 0;
 let scoreMultiplier = 1;
 let gameOver = false;
 let justListen = false;
-let sounds;
+// Map of soundId -> array of Audio objects for that sound
+const SOUND_ADAM_CLICK = "bup";
+const SOUND_ISA_CLICK = "JPop";
+const SOUND_LEVEL_UP = "boip";
+const SOUND_AUTO_CLICK = "tiny-pop";
+let sounds = {};
+// Map of soundId -> index of which element in the array to play next. (Round robin, so if one version isn't done
+//   playing yet, the next one can still play).
+let soundRoundRobin = {};
+
 // Array of Floater objects being animated
 let floaters;
 let floaterTimer;
@@ -31,18 +40,22 @@ const maxV = 300 / (1000 / animationInterval);
 function theAdamShow(shouldJustListen) {
   song = new Audio("sounds/Adam.mp3");
   song.load();
-  let tinyPop = new Audio("sounds/tiny-pop.mp3");
-  let bup = new Audio("sounds/bup.mp3");
-  let jpop = new Audio("sounds/JPop.mp3");
-  let boip = new Audio("sounds/boip.mp3");
-  sounds = [tinyPop, bup, jpop, boip];
-  for (let i = 0; i < 40; i++) {
-    sounds.push(new Audio("sounds/tiny-pop.mp3"));
-  }
-  for (let sound of sounds) {
-    sound.load();
-  }
+  loadSound(SOUND_ADAM_CLICK, 5);
+  loadSound(SOUND_ISA_CLICK, 5);
+  loadSound(SOUND_LEVEL_UP, 2);
+  loadSound(SOUND_AUTO_CLICK, 40);
   startGame(shouldJustListen);
+}
+
+function loadSound(soundId, numberToLoad) {
+  let list = [];
+  for (let i = 0; i < numberToLoad; i++) {
+    let sound = new Audio("sounds/" + soundId + ".mp3");
+    sound.load();
+    list.push(sound);
+  }
+  sounds[soundId] = list;
+  soundRoundRobin[soundId] = 0;
 }
 
 function showInstructions() {
@@ -227,7 +240,7 @@ function clickAdam(event, lineIndex, pieceIndex, displayTime, wasHover) {
   event.preventDefault();
   let $clickedAdam = $("#" + getAdamId(lineIndex, pieceIndex));
   explodeAdam(event.x, event.y, $clickedAdam, lineIndex, pieceIndex);
-  let soundIndex = wasHover ? 0 : 1;
+  let soundId = wasHover ? SOUND_AUTO_CLICK : SOUND_ADAM_CLICK;
   let elapsedTime = Date.now() - displayTime;
   let bonusRate = Math.max((2000 - elapsedTime) / 2000, 0);
   bonusRate = bonusRate * bonusRate;
@@ -237,11 +250,11 @@ function clickAdam(event, lineIndex, pieceIndex, displayTime, wasHover) {
   if (isIsabel) {
     // 2x points for Isabel
     score += 2 * scoreMultiplier;
-    soundIndex = 2; // louder pop for these
+    soundId = SOUND_ISA_CLICK; // louder pop for these
   }
   else if (lines[lineIndex].pieces[pieceIndex + 1].text.startsWith("dumm")) {
     score += 100 * scoreMultiplier;
-    soundIndex = 3;
+    soundId = SOUND_LEVEL_UP;
   }
   else {
     score += scoreMultiplier;
@@ -250,26 +263,20 @@ function clickAdam(event, lineIndex, pieceIndex, displayTime, wasHover) {
     // Crossed 64-point threshold, so now multiply scores by 1000
     scoreMultiplier = 1000;
     score *= 1000;
-    soundIndex = 3; // "boip!"
+    soundId = SOUND_LEVEL_UP;
     $("body").addClass("level2");
   }
   if (prevScore < 22 && score >= 22) {
-    soundIndex = 3; // "boip!"
+    soundId = SOUND_LEVEL_UP;
     $("body").addClass("level3");
   }
 
-  if (soundIndex === 0) {
-    // Since sound '0' happens from hover, and can happen quickly, rotate between 10 copies of that sound,
-    //  so that they can play simultaneously.
-    soundIndex = soundRoundRobin++;
-    if (soundRoundRobin >= sounds.length) {
-      soundRoundRobin = 0;
-    }
-    if (soundRoundRobin > 0 && soundRoundRobin <= 3) {
-      soundRoundRobin = 4;
-    }
-  }
-  sounds[soundIndex].play();
+  let soundCounter = soundRoundRobin[soundId];
+  let soundList = sounds[soundId];
+  let sound = soundList[soundCounter++];
+  soundRoundRobin[soundId] = soundCounter >= soundList.length ? 0 : soundCounter;
+  sound.play();
+
   speedBonus += bonusRate * (score - prevScore);
   updateScore();
 }
@@ -347,8 +354,6 @@ function getPosition(elementId, parentPosition) {
     w: $element.outerWidth(),
     h: $element.outerHeight()};
 }
-
-let soundRoundRobin = 0;
 
 function hoverAdam(event, lineIndex, pieceIndex, displayTime) {
   // Don't delete on hover until 22 points (first verse), nor on final "Adummmmm", nor after game over.
